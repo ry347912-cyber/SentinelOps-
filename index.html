@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIOps Platform — Enterprise Incident Root Cause & Remediation</title>
+<meta name="description" content="AI-powered incident detection, root cause analysis, and automated remediation for modern DevOps teams." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --void: #020408;
+  --void-800: #070e1a;
+  --void-700: #0a1220;
+  --plasma: #00d4ff;
+  --plasma-dim: rgba(0,212,255,0.12);
+  --nova: #ff6b6b;
+  --jade: #00e676;
+  --amber: #ffb347;
+  --violet: #bb86fc;
+  --text: #e2e8f0;
+  --text-muted: #64748b;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--void);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  overflow-x:hidden;
+  line-height:1.6;
+}
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.3);border-radius:2px}
+
+/* ── Background ── */
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);
+  background-size:50px 50px;
+}
+.bg-orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.12}
+.orb-1{width:600px;height:600px;background:var(--plasma);top:-200px;left:-100px;animation:float1 12s ease-in-out infinite}
+.orb-2{width:500px;height:500px;background:var(--violet);top:50%;right:-150px;animation:float2 15s ease-in-out infinite}
+.orb-3{width:400px;height:400px;background:var(--jade);bottom:-100px;left:30%;animation:float3 10s ease-in-out infinite}
+@keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,30px) scale(1.05)}}
+@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,-40px)}}
+@keyframes float3{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-20px)}}
+
+/* ── Layout ── */
+.container{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+section{padding:100px 0}
+
+/* ── Nav ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  backdrop-filter:blur(20px);
+  background:rgba(2,4,8,0.8);
+}
+.nav-inner{max-width:1200px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-icon{
+  width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;
+  background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(187,134,252,0.2));
+  border:1px solid rgba(0,212,255,0.3);box-shadow:0 0 20px rgba(0,212,255,0.2);
+}
+.nav-logo-text{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:#fff}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;color:#94a3b8;transition:.2s}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,0.05)}
+.nav-cta{
+  padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;
+  background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(187,134,252,0.15));
+  border:1px solid rgba(0,212,255,0.35);color:var(--plasma);
+  transition:.2s;box-shadow:0 0 20px rgba(0,212,255,0.1);
+}
+.nav-cta:hover{background:linear-gradient(135deg,rgba(0,212,255,0.3),rgba(187,134,252,0.25));box-shadow:0 0 30px rgba(0,212,255,0.25);transform:translateY(-1px)}
+
+/* ── Hero ── */
+.hero{padding:140px 0 80px;text-align:center}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:50px;font-size:12px;font-weight:600;
+  background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);color:var(--plasma);
+  margin-bottom:28px;letter-spacing:.5px;text-transform:uppercase;
+  animation:fadeDown .6s ease-out;
+}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--plasma);animation:pulse 2s infinite;box-shadow:0 0 8px var(--plasma)}
+.hero-title{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(40px,7vw,80px);font-weight:800;
+  line-height:1.05;letter-spacing:-2px;margin-bottom:24px;
+  animation:fadeDown .6s ease-out .1s both;
+}
+.hero-title span{
+  background:linear-gradient(135deg,var(--plasma),var(--violet),var(--jade));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+  font-size:clamp(16px,2vw,20px);color:#94a3b8;max-width:600px;margin:0 auto 40px;
+  animation:fadeDown .6s ease-out .2s both;
+}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fadeDown .6s ease-out .3s both}
+.btn-hero-primary{
+  padding:14px 32px;border-radius:12px;font-size:15px;font-weight:700;text-decoration:none;
+  background:linear-gradient(135deg,rgba(0,212,255,0.25),rgba(0,212,255,0.1));
+  border:1px solid rgba(0,212,255,0.4);color:var(--plasma);
+  transition:.25s;box-shadow:0 0 30px rgba(0,212,255,0.15);
+}
+.btn-hero-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(0,212,255,0.3);background:linear-gradient(135deg,rgba(0,212,255,0.35),rgba(0,212,255,0.2))}
+.btn-hero-secondary{
+  padding:14px 32px;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;
+  transition:.25s;
+}
+.btn-hero-secondary:hover{background:rgba(255,255,255,0.08);transform:translateY(-2px);border-color:rgba(255,255,255,0.2)}
+
+/* ── Mock Dashboard ── */
+.dashboard-preview{
+  margin-top:70px;border-radius:20px;overflow:hidden;
+  border:1px solid rgba(0,212,255,0.2);
+  box-shadow:0 0 80px rgba(0,212,255,0.1),0 40px 80px rgba(0,0,0,0.6);
+  animation:fadeUp .8s ease-out .4s both;
+  background:var(--void-800);
+}
+.db-titlebar{
+  background:rgba(4,8,16,0.95);padding:12px 20px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid rgba(0,212,255,0.1);
+}
+.db-dot{width:10px;height:10px;border-radius:50%}
+.db-title{font-size:12px;color:#475569;font-family:'JetBrains Mono',monospace;margin-left:6px}
+.db-body{display:grid;grid-template-columns:200px 1fr;min-height:340px}
+.db-sidebar{background:rgba(4,8,16,0.7);border-right:1px solid rgba(255,255,255,0.05);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.db-nav-item{padding:8px 12px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:8px;color:#475569}
+.db-nav-item.active{background:rgba(0,212,255,0.1);color:var(--plasma);border:1px solid rgba(0,212,255,0.2)}
+.db-nav-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.db-main{padding:20px;display:grid;gap:12px}
+.db-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.db-card{
+  background:rgba(7,14,26,0.9);border-radius:10px;padding:14px;
+  border:1px solid rgba(255,255,255,0.06);
+}
+.db-card-title{font-size:10px;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.db-card-val{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700}
+.db-chart{background:rgba(7,14,26,0.9);border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.06)}
+.db-chart-bars{display:flex;align-items:flex-end;gap:6px;height:60px;margin-top:8px}
+.bar{border-radius:3px 3px 0 0;flex:1;transition:.3s}
+
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
+.stat-num{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:800;background:linear-gradient(135deg,var(--plasma),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{font-size:13px;color:var(--text-muted);margin-top:4px}
+
+/* ── Section Heading ── */
+.section-badge{
+  display:inline-block;padding:4px 14px;border-radius:50px;font-size:11px;font-weight:600;
+  letter-spacing:.8px;text-transform:uppercase;margin-bottom:16px;
+}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:16px}
+.section-sub{font-size:16px;color:#94a3b8;max-width:520px}
+
+/* ── Features Grid ── */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:60px}
+.feat-card{
+  background:linear-gradient(135deg,rgba(7,14,26,0.9),rgba(4,8,16,0.95));
+  border-radius:16px;padding:28px;
+  border:1px solid rgba(255,255,255,0.07);
+  transition:.25s;position:relative;overflow:hidden;
+}
+.feat-card::before{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  background:linear-gradient(135deg,var(--feat-color,#00d4ff),transparent);
+  opacity:0;transition:.25s;
+}
+.feat-card:hover{transform:translateY(-4px);border-color:rgba(var(--feat-rgb,0,212,255),0.3);box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+.feat-card:hover::before{opacity:.04}
+.feat-icon{
+  width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;margin-bottom:16px;
+  background:rgba(var(--feat-rgb,0,212,255),.1);border:1px solid rgba(var(--feat-rgb,0,212,255),.25);
+}
+.feat-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px;color:#f1f5f9}
+.feat-desc{font-size:13px;color:#64748b;line-height:1.7}
+.feat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.feat-tag{font-size:10px;padding:3px 10px;border-radius:50px;font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#475569}
+
+/* ── Tech Stack ── */
+.tech-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:50px}
+.tech-card{
+  background:rgba(7,14,26,0.8);border-radius:12px;padding:20px 16px;text-align:center;
+  border:1px solid rgba(255,255,255,0.07);transition:.2s;
+}
+.tech-card:hover{border-color:rgba(0,212,255,0.25);transform:translateY(-2px);background:rgba(7,14,26,0.95)}
+.tech-icon{font-size:28px;margin-bottom:8px}
+.tech-name{font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:2px}
+.tech-role{font-size:10px;color:#475569}
+
+/* ── How It Works ── */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;margin-top:60px}
+.steps::before{
+  content:'';position:absolute;top:30px;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--plasma),var(--violet),var(--jade),transparent);
+  opacity:.3;
+}
+.step{text-align:center;padding:0 20px;position:relative}
+.step-num{
+  width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;
+  position:relative;z-index:1;
+}
+.step-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin-bottom:8px}
+.step-desc{font-size:13px;color:#64748b;line-height:1.7}
+
+/* ── Incident Card ── */
+.incident-demo{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.incident-card{
+  background:rgba(7,14,26,0.95);border-radius:16px;padding:24px;
+  border:1px solid rgba(255,107,107,0.2);
+  box-shadow:0 0 40px rgba(255,107,107,0.05);
+}
+.incident-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.incident-sev{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700}
+.incident-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#f1f5f9}
+.rca-card{
+  background:rgba(7,14,26,0.95);border-radius:16px;padding:24px;
+  border:1px solid rgba(0,212,255,0.2);
+  box-shadow:0 0 40px rgba(0,212,255,0.05);
+}
+.reasoning-step{display:flex;gap:12px;margin-bottom:12px}
+.reasoning-num{
+  width:24px;height:24px;border-radius:50%;background:rgba(0,212,255,0.15);
+  border:1px solid rgba(0,212,255,0.3);display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--plasma);flex-shrink:0;
+}
+.reasoning-text{font-size:12px;color:#94a3b8;line-height:1.6}
+.terminal-block{
+  background:rgba(0,0,0,0.6);border-radius:8px;padding:14px;margin-top:14px;
+  border:1px solid rgba(0,212,255,0.15);font-family:'JetBrains Mono',monospace;font-size:11px;
+}
+.terminal-line{margin-bottom:4px}
+.t-prompt{color:#475569}
+.t-cmd{color:var(--plasma)}
+.t-out{color:#64748b}
+.t-ok{color:var(--jade)}
+.t-err{color:var(--nova)}
+
+/* ── CTA ── */
+.cta-section{
+  text-align:center;padding:80px 0;
+  background:radial-gradient(ellipse at center, rgba(0,212,255,0.06) 0%, transparent 70%);
+}
+.cta-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:800;letter-spacing:-1.5px;margin-bottom:20px}
+.cta-sub{font-size:18px;color:#64748b;margin-bottom:40px}
+.cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-cta{
+  padding:16px 36px;border-radius:14px;font-size:16px;font-weight:700;text-decoration:none;transition:.25s;cursor:pointer;border:none;
+}
+.btn-cta-primary{
+  background:linear-gradient(135deg,rgba(0,212,255,0.25),rgba(187,134,252,0.15));
+  border:2px solid rgba(0,212,255,0.4);color:var(--plasma);
+  box-shadow:0 0 40px rgba(0,212,255,0.15);
+}
+.btn-cta-primary:hover{box-shadow:0 0 70px rgba(0,212,255,0.3);transform:translateY(-3px);background:linear-gradient(135deg,rgba(0,212,255,0.35),rgba(187,134,252,0.25))}
+.btn-cta-outline{
+  background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.12);color:#e2e8f0;
+}
+.btn-cta-outline:hover{background:rgba(255,255,255,0.08);transform:translateY(-3px)}
+
+/* ── Footer ── */
+footer{border-top:1px solid rgba(255,255,255,0.06);padding:40px 0;text-align:center}
+.footer-logo{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px}
+.footer-desc{font-size:13px;color:#475569;max-width:400px;margin:0 auto 20px}
+.footer-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+.footer-link{font-size:13px;color:#475569;text-decoration:none;transition:.2s}
+.footer-link:hover{color:var(--plasma)}
+.footer-copy{font-size:12px;color:#334155;margin-top:20px}
+
+/* ── Animations ── */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes scan{0%{top:-2px}100%{top:100vh}}
+.scan-line{position:fixed;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--plasma),transparent);opacity:.2;animation:scan 6s linear infinite;pointer-events:none;z-index:99}
+
+/* Observe-in animation */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease-out,transform .6s ease-out}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Responsive */
+@media(max-width:768px){
+  .features-grid{grid-template-columns:1fr}
+  .tech-grid{grid-template-columns:repeat(3,1fr)}
+  .steps{grid-template-columns:1fr 1fr;row-gap:40px}
+  .steps::before{display:none}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .db-body{grid-template-columns:1fr}
+  .db-sidebar{display:none}
+  .db-row{grid-template-columns:1fr 1fr}
+  .incident-demo{grid-template-columns:1fr}
+  .nav-links{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+<div class="scan-line"></div>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">⚡</div>
+      <span class="nav-logo-text">AIOps Platform</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#how-it-works" class="nav-link">How It Works</a>
+      <a href="#tech-stack" class="nav-link">Tech Stack</a>
+      <a href="#demo" class="nav-link">Demo</a>
+      <a href="http://localhost:3000" class="nav-cta" target="_blank">Launch App →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Enterprise AIOps · Powered by Claude AI
+    </div>
+    <h1 class="hero-title">
+      Detect. Analyze.<br /><span>Remediate.</span>
+    </h1>
+    <p class="hero-sub">
+      AI-powered incident detection, root cause analysis, and automated remediation — 
+      built for modern DevOps teams running at scale.
+    </p>
+    <div class="hero-btns">
+      <a href="http://localhost:3000" class="btn-hero-primary" target="_blank">🚀 Launch Dashboard</a>
+      <a href="https://github.com/your-org/aiops-platform" class="btn-hero-secondary" target="_blank">⭐ View on GitHub</a>
+    </div>
+
+    <!-- Mock Dashboard Preview -->
+    <div class="dashboard-preview">
+      <div class="db-titlebar">
+        <div class="db-dot" style="background:#ff5f57"></div>
+        <div class="db-dot" style="background:#febc2e"></div>
+        <div class="db-dot" style="background:#28c840"></div>
+        <span class="db-title">aiops-platform — dashboard — production</span>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+          <div style="width:6px;height:6px;border-radius:50%;background:#00e676;animation:pulse 2s infinite;box-shadow:0 0 6px #00e676"></div>
+          <span style="font-size:11px;color:#00e676;font-family:'JetBrains Mono',monospace">LIVE</span>
+        </div>
+      </div>
+      <div class="db-body">
+        <div class="db-sidebar">
+          <div class="db-nav-item active"><div class="db-nav-dot"></div>Dashboard</div>
+          <div class="db-nav-item"><div class="db-nav-dot"></div>Incidents</div>
+          <div class="db-nav-item"><div class="db-nav-dot"></div>Log Viewer</div>
+          <div class="db-nav-item"><div class="db-nav-dot"></div>AI Analysis</div>
+          <div class="db-nav-item"><div class="db-nav-dot"></div>AI Assistant</div>
+          <div class="db-nav-item"><div class="db-nav-dot"></div>Settings</div>
+        </div>
+        <div class="db-main">
+          <div class="db-row">
+            <div class="db-card">
+              <div class="db-card-title">Total Logs</div>
+              <div class="db-card-val" style="color:#00d4ff">48.2K</div>
+            </div>
+            <div class="db-card">
+              <div class="db-card-title">Open Incidents</div>
+              <div class="db-card-val" style="color:#ff6b6b">12</div>
+            </div>
+            <div class="db-card">
+              <div class="db-card-title">Critical</div>
+              <div class="db-card-val" style="color:#ff4444">3</div>
+            </div>
+            <div class="db-card">
+              <div class="db-card-title">Avg Resolution</div>
+              <div class="db-card-val" style="color:#00e676">2.4h</div>
+            </div>
+          </div>
+          <div class="db-chart">
+            <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.5px">Incidents · Last 7 Days</div>
+            <div class="db-chart-bars">
+              <div class="bar" style="height:30%;background:#00d4ff44"></div>
+              <div class="bar" style="height:50%;background:#00d4ff66"></div>
+              <div class="bar" style="height:40%;background:#00d4ff55"></div>
+              <div class="bar" style="height:70%;background:#00d4ff88"></div>
+              <div class="bar" style="height:45%;background:#00d4ff66"></div>
+              <div class="bar" style="height:90%;background:#ff6b6b99"></div>
+              <div class="bar" style="height:60%;background:#00d4ff77"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats ── -->
+<section style="padding:40px 0 80px">
+  <div class="container">
+    <div class="stats-grid reveal">
+      <div><div class="stat-num">10+</div><div class="stat-label">Incident Types Detected</div></div>
+      <div><div class="stat-num">5</div><div class="stat-label">Log Source Types</div></div>
+      <div><div class="stat-num">95%</div><div class="stat-label">Detection Accuracy</div></div>
+      <div><div class="stat-num">&lt;30s</div><div class="stat-label">Avg Detection Latency</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ── -->
+<section id="features">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-badge" style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);color:var(--plasma)">Core Features</div>
+      <h2 class="section-title">Everything you need for<br/>intelligent incident management</h2>
+      <p class="section-sub">From ingestion to resolution — the full incident lifecycle powered by AI.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feat-card reveal" style="--feat-color:#00d4ff;--feat-rgb:0,212,255">
+        <div class="feat-icon" style="--feat-rgb:0,212,255">📥</div>
+        <div class="feat-title">Multi-Source Log Ingestion</div>
+        <div class="feat-desc">Ingest logs from servers, Docker containers, Kubernetes pods, Nginx, and custom applications via file upload or REST API.</div>
+        <div class="feat-tags">
+          <span class="feat-tag">TXT</span><span class="feat-tag">JSON</span>
+          <span class="feat-tag">Nginx</span><span class="feat-tag">K8s</span><span class="feat-tag">Docker</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal" style="--feat-color:#ff6b6b;--feat-rgb:255,107,107">
+        <div class="feat-icon">🚨</div>
+        <div class="feat-title">Intelligent Incident Detection</div>
+        <div class="feat-desc">Rule-based + AI anomaly detection catches failed deployments, memory spikes, CPU overload, auth failures, and traffic anomalies in real-time.</div>
+        <div class="feat-tags">
+          <span class="feat-tag">Rule-Based</span><span class="feat-tag">AI-Based</span><span class="feat-tag">Real-Time</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal" style="--feat-color:#bb86fc;--feat-rgb:187,134,252">
+        <div class="feat-icon">🧠</div>
+        <div class="feat-title">AI Root Cause Analysis</div>
+        <div class="feat-desc">Claude AI analyzes log timelines, correlates events across services, and identifies root causes with confidence scores and step-by-step reasoning.</div>
+        <div class="feat-tags">
+          <span class="feat-tag">Claude AI</span><span class="feat-tag">Confidence Score</span><span class="feat-tag">Reasoning Trace</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal" style="--feat-color:#ffb347;--feat-rgb:255,179,71">
+        <div class="feat-icon">🔧</div>
+        <div class="feat-title">Auto Remediation Steps</div>
+        <div class="feat-desc">Get actionable kubectl, docker, systemctl, and nginx commands tailored to each incident. Includes immediate fixes and long-term prevention tips.</div>
+        <div class="feat-tags">
+          <span class="feat-tag">kubectl</span><span class="feat-tag">docker</span><span class="feat-tag">systemctl</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal" style="--feat-color:#00e676;--feat-rgb:0,230,118">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Dual Summary Generation</div>
+        <div class="feat-desc">Automatically generate technical summaries for engineers AND management-friendly summaries with business impact for stakeholders — no manual writing needed.</div>
+        <div class="feat-tags">
+          <span class="feat-tag">Technical</span><span class="feat-tag">Management</span><span class="feat-tag">SLA Impact</span>
+        </div>
+      </div>
+
+      <div class="feat-card reveal" style="--feat-color:#00d4ff;--feat-rgb:0,212,255">
+        <div class="feat-icon">💬</div>
+        <div class="feat-title">AI Incident Chatbot</div>
+        <div class="feat-desc">Natural language interface powered by Claude. Ask questions about incidents, get remediation guidance, or explore your incident history conversationally.</div>
+        <div class="feat-tags">
+          <span class="feat-tag">Claude AI</span><span class="feat-tag">Context-Aware</span><span class="feat-tag">History</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ── -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <div class="section-badge" style="background:rgba(187,134,252,0.08);border:1px solid rgba(187,134,252,0.25);color:var(--violet)">Process</div>
+      <h2 class="section-title">From logs to resolution<br/>in 4 automated steps</h2>
+    </div>
+    <div class="steps reveal">
+      <div class="step">
+        <div class="step-num" style="background:rgba(0,212,255,0.12);border:2px solid rgba(0,212,255,0.3);color:var(--plasma)">1</div>
+        <div class="step-title">Ingest</div>
+        <div class="step-desc">Upload log files or stream via API from any source — servers, containers, Kubernetes, nginx</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(255,107,107,0.12);border:2px solid rgba(255,107,107,0.3);color:var(--nova)">2</div>
+        <div class="step-title">Detect</div>
+        <div class="step-desc">Pattern matching + AI anomaly detection creates incident records with severity scores</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(187,134,252,0.12);border:2px solid rgba(187,134,252,0.3);color:var(--violet)">3</div>
+        <div class="step-title">Analyze</div>
+        <div class="step-desc">Claude AI performs root cause analysis with reasoning traces and confidence scores</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:rgba(0,230,118,0.12);border:2px solid rgba(0,230,118,0.3);color:var(--jade)">4</div>
+        <div class="step-title">Remediate</div>
+        <div class="step-desc">Get specific commands, steps, and prevention tips to resolve the incident quickly</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Live Demo Incident ── -->
+<section id="demo">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <div class="section-badge" style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.25);color:var(--nova)">Live Demo</div>
+      <h2 class="section-title">See it in action</h2>
+      <p class="section-sub" style="margin:0 auto">Real incident detection and AI root cause analysis output</p>
+    </div>
+
+    <div class="incident-demo reveal">
+      <div class="incident-card">
+        <div class="incident-header">
+          <span class="incident-sev" style="background:rgba(255,107,107,0.15);color:#ff6b6b;border:1px solid rgba(255,107,107,0.3)">CRITICAL</span>
+          <span style="font-size:11px;color:#475569">#INS-047 · detected 2 min ago</span>
+        </div>
+        <div class="incident-title">Failed Deployment — api-gateway service</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(0,212,255,0.1);color:var(--plasma);font-family:'JetBrains Mono',monospace">api-gateway</span>
+          <span style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(0,212,255,0.1);color:var(--plasma);font-family:'JetBrains Mono',monospace">k8s-prod-01</span>
+        </div>
+        <div style="margin-top:16px;font-size:11px;color:#475569;font-family:'JetBrains Mono',monospace;background:rgba(0,0,0,0.4);border-radius:8px;padding:12px;border:1px solid rgba(255,107,107,0.15)">
+          <div style="color:#ff6b6b">[10:00:10] ERROR CrashLoopBackOff exit code 1</div>
+          <div style="color:#ffb347">[10:00:15] ERROR ImagePullBackOff registry.company.com</div>
+          <div style="color:#ff4444">[10:00:25] FATAL Deployment FAILED - rolling back</div>
+        </div>
+        <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:10px;color:#475569;margin-bottom:4px">Severity Score</div>
+            <div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.1);overflow:hidden;width:120px">
+              <div style="height:100%;width:88%;background:linear-gradient(90deg,#ff6b6b,#ff4444);border-radius:2px"></div>
+            </div>
+          </div>
+          <div style="font-size:20px;font-family:'Space Grotesk',sans-serif;font-weight:800;color:#ff6b6b">8.8</div>
+        </div>
+      </div>
+
+      <div class="rca-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.25);display:flex;align-items:center;justify-content:center">🧠</div>
+          <span style="font-size:13px;font-weight:600;color:#e2e8f0">AI Root Cause Analysis</span>
+          <span style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(0,230,118,0.1);color:var(--jade)">92% confidence</span>
+        </div>
+
+        <div style="font-size:13px;color:#cbd5e1;padding:12px;background:rgba(0,212,255,0.05);border-radius:8px;border:1px solid rgba(0,212,255,0.12);margin-bottom:14px">
+          Missing config file <code style="color:var(--plasma)">'./config/database.js'</code> in new image <code style="color:var(--plasma)">v2.1.3</code> causes container crash on startup.
+        </div>
+
+        <div class="reasoning-step">
+          <div class="reasoning-num">1</div>
+          <div class="reasoning-text">Container exits with code 1 immediately after start — indicates startup failure, not runtime error</div>
+        </div>
+        <div class="reasoning-step">
+          <div class="reasoning-num">2</div>
+          <div class="reasoning-text">Error log shows <code style="color:var(--plasma);font-family:'JetBrains Mono',monospace">Cannot find module './config/database.js'</code> — missing configuration file</div>
+        </div>
+        <div class="reasoning-step">
+          <div class="reasoning-num">3</div>
+          <div class="reasoning-text">Issue introduced in v2.1.3 build — v2.1.2 was stable. Likely a missing file in Docker build context</div>
+        </div>
+
+        <div class="terminal-block">
+          <div class="terminal-line"><span class="t-prompt">$</span> <span class="t-cmd">kubectl rollout undo deployment/api-gateway</span></div>
+          <div class="terminal-line"><span class="t-out">deployment.apps/api-gateway rolled back</span></div>
+          <div class="terminal-line"><span class="t-prompt">$</span> <span class="t-cmd">kubectl rollout status deployment/api-gateway</span></div>
+          <div class="terminal-line"><span class="t-ok">✓ deployment "api-gateway" successfully rolled out</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Tech Stack ── -->
+<section id="tech-stack">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <div class="section-badge" style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.25);color:var(--jade)">Tech Stack</div>
+      <h2 class="section-title">Built with best-in-class<br/>modern technologies</h2>
+    </div>
+
+    <div class="tech-grid reveal">
+      <div class="tech-card"><div class="tech-icon">🐍</div><div class="tech-name">Python 3.12</div><div class="tech-role">Backend Runtime</div></div>
+      <div class="tech-card"><div class="tech-icon">⚡</div><div class="tech-name">FastAPI</div><div class="tech-role">REST + WebSocket API</div></div>
+      <div class="tech-card"><div class="tech-icon">⚛️</div><div class="tech-name">React 18</div><div class="tech-role">Frontend UI</div></div>
+      <div class="tech-card"><div class="tech-icon">🎨</div><div class="tech-name">Tailwind CSS</div><div class="tech-role">Styling</div></div>
+      <div class="tech-card"><div class="tech-icon">🤖</div><div class="tech-name">Claude AI</div><div class="tech-role">AI Analysis</div></div>
+      <div class="tech-card"><div class="tech-icon">🗄️</div><div class="tech-name">SQLAlchemy</div><div class="tech-role">ORM + Database</div></div>
+      <div class="tech-card"><div class="tech-icon">📊</div><div class="tech-name">Recharts</div><div class="tech-role">Data Visualization</div></div>
+      <div class="tech-card"><div class="tech-icon">🔒</div><div class="tech-name">JWT Auth</div><div class="tech-role">Authentication</div></div>
+      <div class="tech-card"><div class="tech-icon">🐳</div><div class="tech-name">Docker</div><div class="tech-role">Containerization</div></div>
+      <div class="tech-card"><div class="tech-icon">🌐</div><div class="tech-name">WebSockets</div><div class="tech-role">Real-time Events</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta-section">
+  <div class="container">
+    <div class="reveal">
+      <h2 class="cta-title">Ready to tame your<br/><span style="background:linear-gradient(135deg,var(--plasma),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">incident chaos?</span></h2>
+      <p class="cta-sub">Set up in minutes. Works with your existing log infrastructure.</p>
+      <div class="cta-btns">
+        <a href="http://localhost:3000" class="btn-cta btn-cta-primary" target="_blank">🚀 Launch Dashboard</a>
+        <a href="https://github.com/your-org/aiops-platform" class="btn-cta btn-cta-outline" target="_blank">📖 Read the Docs</a>
+      </div>
+
+      <div style="margin-top:50px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:700px;margin-left:auto;margin-right:auto">
+        <div style="padding:20px;border-radius:12px;background:rgba(7,14,26,0.8);border:1px solid rgba(255,255,255,0.07)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--plasma);margin-bottom:8px">$ Quick Start</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569">git clone [repo]<br/>cp .env.example .env<br/>docker-compose up</div>
+        </div>
+        <div style="padding:20px;border-radius:12px;background:rgba(7,14,26,0.8);border:1px solid rgba(255,255,255,0.07)">
+          <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px">✅ Default Credentials</div>
+          <div style="font-size:12px;color:#475569">Admin: <code style="color:var(--plasma)">admin / Admin@123</code><br/>Demo: <code style="color:var(--plasma)">demo / Demo@123</code></div>
+        </div>
+        <div style="padding:20px;border-radius:12px;background:rgba(7,14,26,0.8);border:1px solid rgba(255,255,255,0.07)">
+          <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px">🔑 Add AI Key</div>
+          <div style="font-size:12px;color:#475569">Set <code style="color:var(--plasma)">ANTHROPIC_API_KEY</code> in <code style="color:var(--plasma)">.env</code> for full AI features</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="container">
+    <div class="footer-logo">⚡ AIOps Platform</div>
+    <p class="footer-desc">Enterprise AI-powered incident detection, root cause analysis, and automated remediation platform.</p>
+    <div class="footer-links">
+      <a href="#features" class="footer-link">Features</a>
+      <a href="#how-it-works" class="footer-link">How It Works</a>
+      <a href="#tech-stack" class="footer-link">Tech Stack</a>
+      <a href="http://localhost:8000/api/docs" class="footer-link" target="_blank">API Docs</a>
+      <a href="https://github.com/your-org/aiops-platform" class="footer-link" target="_blank">GitHub</a>
+    </div>
+    <div class="footer-copy">Built with ❤️ using FastAPI · React · Claude AI · Docker · v1.0.0</div>
+  </div>
+</footer>
+
+<script>
+// Intersection Observer for reveal animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+  })
+}, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' })
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+
+// Animated bar heights on load
+setTimeout(() => {
+  document.querySelectorAll('.bar').forEach(b => b.style.transition = 'height 0.8s ease-out')
+}, 800)
+</script>
+</body>
+</html>
